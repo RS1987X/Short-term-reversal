@@ -61,13 +61,20 @@ long_returns_daily = ret_daily*long_ind.shift(1)
 
 long_returns_daily.mean(axis=0)
 n_longs = long_ind.count(axis=1)
-transaction_cost = 0.00034#n_longs*29#0.00058
-starting_capital = 500000
+
+#calc transaction cost
+trans = long_ind-long_ind.shift(1)
+n_trans = trans.count().sum()
+
+trans_value = n_trans*100000
+total_trans_cost = n_trans*29
+
+trans_proc_fee = total_trans_cost/trans_value
 
 #daily returns of long short strategy
 #avg_long_ret = starting_capital*long_returns_daily.mean(axis=1)-transaction_cost
-avg_long_ret = long_returns_daily.mean(axis=1)-transaction_cost
-avg_short_ret = short_returns_daily.mean(axis=1)-transaction_cost
+avg_long_ret = long_returns_daily.mean(axis=1)-trans_proc_fee
+avg_short_ret = short_returns_daily.mean(axis=1)-trans_proc_fee
 daily_returns_strat = avg_long_ret #+avg_short_ret
 
 #avg_daily_rets  = daily_returns_strat.mean(axis=1)
@@ -150,25 +157,38 @@ print(boh_Max_Daily_Drawdown.tail(1))
 print('40-day momentum of short term reversal INDUSTRIALS strategy')
 print(cum_ret.pct_change(40).tail(1))
 
-#measure correlation
-st_rev_RE_IND =mom_daily_ret_RE.to_frame().merge(mom_daily_ret_IND.rename("IND"), how="outer",left_index = True, right_index=True)
-st_rev_RE_IND = st_rev_RE_IND.dropna(how='all').fillna(0)
-plt.scatter(st_rev_RE_IND.iloc[:,0],st_rev_RE_IND.iloc[:,1])
-np.corrcoef(st_rev_RE_IND.iloc[:,0],st_rev_RE_IND.iloc[:,1])
-stats.pearsonr(st_rev_RE_IND.iloc[:,0],st_rev_RE_IND.iloc[:,1])
 
-comb = (st_rev_RE_IND.iloc[:,0] + st_rev_RE_IND.iloc[:,1])/2
-cum_comb =(1+comb).cumprod()
-plt.plot(cum_comb)
 
-print('combined')
-print(cum_comb.tail(1)**(1/7)-1)
-print(comb.std()*math.sqrt(252))
-print((cum_comb.tail(1)**(1/7)-1)/(comb.std()*math.sqrt(252)))
-print((cum_comb.tail(1)**(1/7)-1)/(comb.std()*math.sqrt(252))**2)
+#calculate log returns st reversal momentum strategy
+mom_log_ret_IND = np.log(mom_cum_ret)-np.log(mom_cum_ret.shift(1))
+per = mom_log_ret_IND.index.to_period("Y")
+g = mom_log_ret_IND.groupby(per)
+ret_per_year = g.sum()
+print("st reversal Industrials with factor momentum returns per year")
+print(ret_per_year)
 
-#maxiumum drawdown
-comb_Roll_Max = cum_comb.cummax()
-comb_Daily_Drawdown = cum_comb/comb_Roll_Max - 1.0
-comb_Max_Daily_Drawdown = comb_Daily_Drawdown.cummin()
-print(comb_Max_Daily_Drawdown.tail(1))
+# =============================================================================
+
+# #measure correlation
+# st_rev_RE_IND =mom_daily_ret_RE.to_frame().merge(mom_daily_ret_IND.rename("IND"), how="outer",left_index = True, right_index=True)
+# st_rev_RE_IND = st_rev_RE_IND.dropna(how='all').fillna(0)
+# plt.scatter(st_rev_RE_IND.iloc[:,0],st_rev_RE_IND.iloc[:,1])
+# np.corrcoef(st_rev_RE_IND.iloc[:,0],st_rev_RE_IND.iloc[:,1])
+# stats.pearsonr(st_rev_RE_IND.iloc[:,0],st_rev_RE_IND.iloc[:,1])
+# 
+# comb = (st_rev_RE_IND.iloc[:,0] + st_rev_RE_IND.iloc[:,1])/2
+# cum_comb =(1+comb).cumprod()
+# plt.plot(cum_comb)
+# 
+# print('combined')
+# print(cum_comb.tail(1)**(1/7)-1)
+# print(comb.std()*math.sqrt(252))
+# print((cum_comb.tail(1)**(1/7)-1)/(comb.std()*math.sqrt(252)))
+# print((cum_comb.tail(1)**(1/7)-1)/(comb.std()*math.sqrt(252))**2)
+# 
+# #maxiumum drawdown
+# comb_Roll_Max = cum_comb.cummax()
+# comb_Daily_Drawdown = cum_comb/comb_Roll_Max - 1.0
+# comb_Max_Daily_Drawdown = comb_Daily_Drawdown.cummin()
+# print(comb_Max_Daily_Drawdown.tail(1))
+# =============================================================================
