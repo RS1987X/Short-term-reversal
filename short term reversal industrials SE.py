@@ -158,7 +158,6 @@ print('40-day momentum of short term reversal INDUSTRIALS strategy')
 print(cum_ret.pct_change(40).tail(1))
 
 
-
 #calculate log returns st reversal momentum strategy
 mom_log_ret_IND = np.log(mom_cum_ret)-np.log(mom_cum_ret.shift(1))
 per = mom_log_ret_IND.index.to_period("Y")

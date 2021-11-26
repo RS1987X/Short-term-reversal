@@ -24,13 +24,13 @@ tday_str = tday.strftime("%Y-%m-%d")
 hist = yf.download('BALD-B.ST BRIN-B.ST SAGA-B.ST SBB-B.ST CAST.ST WALL-B.ST FABG.ST CORE-B.ST WIHL.ST'
                     ' NYF.ST HUFV-A.ST KLED.ST FPAR-A.ST ATRLJ-B.ST CATE.ST NP3.ST PLAZ-B.ST'
                     ' KFAST-B.ST DIOS.ST HEBA-B.ST TRIAN-B.ST CIBUS.ST BONAV-B.ST AMAST.ST'
-                    ' PNDX-B.ST JM.ST', start='2015-01-01', end=tday_str)
+                    ' PNDX-B.ST JM.ST SFAST.ST', start='2015-01-01', end=tday_str)
 # =============================================================================
 #=============================================================================
 
 close_prices = hist["Adj Close"]#.dropna(how='all').fillna(0)
 volumes = hist["Volume"].dropna(how='all').fillna(0)
-close_prices = close_prices.drop('2020-01-01')
+#close_prices = close_prices.drop('2020-01-01')
 
 
 
@@ -81,7 +81,12 @@ cum_ret =(1 + daily_returns_strat).cumprod()
 #cum_long_ret =  (1 + avg_long_ret).cumprod()
 #cum_short_ret =  (1 + avg_short_ret).cumprod()
 
-#stats
+
+###########################################
+#stats for basic strategy
+##########################################
+
+print("   ")
 print('Short term reversal')
 mean_ret = cum_ret.tail(1)**(1/7)-1
 print("CAGR " + str(mean_ret[0]))
@@ -97,13 +102,16 @@ Daily_Drawdown = cum_ret/Roll_Max - 1.0
 Max_Daily_Drawdown = Daily_Drawdown.cummin()
 print("Max drawdown " + str(Max_Daily_Drawdown.tail(1)[0]))
 
-#plos
+#plots
 plt.plot(cum_ret)
 #plt.plot(cum_long_ret)
 #plt.plot(cum_short_ret)
 #plt.plot(Daily_Drawdown)
 
-#consider factor momentum
+
+###################################################
+#modified strategy considering factor momentum
+####################################################
 mom_cum_ret = (1+daily_returns_strat[cum_ret.pct_change(20).shift(1) > 0]).cumprod()
 #mom_cum_ret = starting_capital + np.cumsum(daily_returns_strat[cum_ret.pct_change(20).shift(1) > 0])
 mom_daily_ret_RE = mom_cum_ret.pct_change()
@@ -119,7 +127,7 @@ mom_kelly_f = mom_mean_ret/mom_vol**2
 mom_Roll_Max = mom_cum_ret.cummax()
 mom_Daily_Drawdown = mom_cum_ret/mom_Roll_Max - 1.0
 mom_Max_Daily_Drawdown = mom_Daily_Drawdown.cummin()
-
+print("   ")
 print('Short term reversal with factor momentum')
 print("CAGR " + str(mom_mean_ret[0]))
 print("Volatility " + str(mom_vol))
@@ -132,10 +140,30 @@ Daily_Drawdown = cum_ret/Roll_Max - 1.0
 Max_Daily_Drawdown = Daily_Drawdown.cummin()
 print("Max drawdown " + str(mom_Max_Daily_Drawdown.tail(1)[0]))
 
-    
+#calculate log returns st reversal momentum strategy and print returns per year
+mom_log_ret_RE = np.log(mom_cum_ret)-np.log(mom_cum_ret.shift(1))
+per = mom_log_ret_RE.index.to_period("Y")
+g = mom_log_ret_RE.groupby(per)
+ret_per_year = g.sum()
+print("   ")
+print("st reversal Real Estate with factor momentum returns per year")
+print(ret_per_year)
+
+per_M = mom_log_ret_RE.index.to_period("M")
+grouping_month = mom_log_ret_RE.groupby(per_M)
+ret_per_month = grouping_month.sum()
+#stats for monthly returns
+percent_positive = ret_per_month[ret_per_month>0].count()/ret_per_month.count()
+print("")
+print("percent positive months " + str(percent_positive))
+
+
 plt.plot(mom_cum_ret)
 
+################
 #buy and hold
+#################
+
 avg_ret_boh= ret_daily.mean(axis=1)
 cum_ret_boh =  (1 + avg_ret_boh).cumprod()
 #avg_ret_boh= starting_capital*ret_daily.mean(axis=1)
@@ -144,6 +172,7 @@ plt.plot(cum_ret_boh)
 
 
 #stats buy and hold
+print("   ")
 print('Buy and hold stats')
 boh_mean_ret = cum_ret_boh.tail(1)**(1/7)-1
 boh_vol = (avg_ret_boh.std()*math.sqrt(252))
@@ -166,14 +195,10 @@ print("Kelly fraction " + str(boh_kelly_f[0]))
 print("Max drawdown " + str(boh_Max_Daily_Drawdown.tail(1)[0]))
 
 
-#calculate log returns st reversal momentum strategy
-mom_log_ret_RE = np.log(mom_cum_ret)-np.log(mom_cum_ret.shift(1))
-per = mom_log_ret_RE.index.to_period("Y")
-g = mom_log_ret_RE.groupby(per)
-ret_per_year = g.sum()
-print("st reversal Real Estate with factor momentum returns per year")
-print(ret_per_year)
 
+
+
+print("   ")
 print('20-day momentum of short term reversal REAL ESTATE strategy')
 print(cum_ret.pct_change(20).tail(1))
 
