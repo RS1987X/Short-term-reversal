@@ -85,52 +85,84 @@ cum_ret =(1 + daily_returns_strat).cumprod()
 #cum_long_ret =  (1 + avg_long_ret).cumprod()
 #cum_short_ret =  (1 + avg_short_ret).cumprod()
 
-#stats
-print('Short term reversal')
+
+###########################################
+#stats for basic strategy
+##########################################
+
+print("   ")
+print('Short term reversal INDUSTRIALS')
 mean_ret = cum_ret.tail(1)**(1/7)-1
-print(mean_ret)
+print("CAGR " + str(mean_ret[0]))
 vol = (daily_returns_strat.std()*math.sqrt(252))
 sharpe = mean_ret/vol
 kelly_f = mean_ret/vol**2
-print(vol)
-print(sharpe)
-print(kelly_f)
+print("Volatility " + str(vol))
+print("Sharpe " + str(sharpe[0]))
+print("Kelly fraction " + str(kelly_f[0]))
 #maxiumum drawdown
 Roll_Max = cum_ret.cummax()
 Daily_Drawdown = cum_ret/Roll_Max - 1.0
 Max_Daily_Drawdown = Daily_Drawdown.cummin()
-print(Max_Daily_Drawdown.tail(1))
+print("Max drawdown " + str(Max_Daily_Drawdown.tail(1)[0]))
 
-#plos
+#plots
 plt.plot(cum_ret)
-#plt.plot(cum_long_ret)
-#plt.plot(cum_short_ret)
-#plt.plot(Daily_Drawdown)
 
-#consider factor momentum
-mom_cum_ret = (1+daily_returns_strat[cum_ret.pct_change(40).shift(1) > 0]).cumprod()
+###################################################
+#modified strategy considering factor momentum
+####################################################
+
+mom_cum_ret = (1+daily_returns_strat[cum_ret.pct_change(20).shift(1) > 0]).cumprod()
 #mom_cum_ret = starting_capital + np.cumsum(daily_returns_strat[cum_ret.pct_change(20).shift(1) > 0])
 mom_daily_ret_IND = mom_cum_ret.pct_change()
 
+
 mom_mean_ret = mom_cum_ret.tail(1)**(1/7)-1
-print('Short term reversal with factor momentum')
-print(mom_mean_ret)
+
 mom_vol = (daily_returns_strat[cum_ret.pct_change(40).shift(1) > 0].std()*math.sqrt(252))
 mom_sharpe = mom_mean_ret/mom_vol
 mom_kelly_f = mom_mean_ret/mom_vol**2
-print(mom_vol)
-print(mom_sharpe)
-print(mom_kelly_f)
+
 #maxiumum drawdown
 mom_Roll_Max = mom_cum_ret.cummax()
 mom_Daily_Drawdown = mom_cum_ret/mom_Roll_Max - 1.0
 mom_Max_Daily_Drawdown = mom_Daily_Drawdown.cummin()
-print(mom_Max_Daily_Drawdown.tail(1))
+print("   ")
+print('Short term reversal with factor momentum INDUSTRIALS')
+print("CAGR " + str(mom_mean_ret[0]))
+print("Volatility " + str(mom_vol))
 
-    
-plt.plot(mom_cum_ret)
+print("Sharpe " + str(mom_sharpe[0]))
+print("Kelly fraction " + str(mom_kelly_f[0]))
+#maxiumum drawdown
+Roll_Max = cum_ret.cummax()
+Daily_Drawdown = cum_ret/Roll_Max - 1.0
+Max_Daily_Drawdown = Daily_Drawdown.cummin()
+print("Max drawdown " + str(mom_Max_Daily_Drawdown.tail(1)[0]))
 
+#calculate log returns st reversal momentum strategy and print returns per year
+mom_log_ret_IND = np.log(mom_cum_ret)-np.log(mom_cum_ret.shift(1))
+per = mom_log_ret_IND.index.to_period("Y")
+g = mom_log_ret_IND.groupby(per)
+ret_per_year = g.sum()
+print("   ")
+print("st reversal INDUSTRIALS with factor momentum returns per year")
+print(ret_per_year)
+
+
+per_M = mom_log_ret_IND.index.to_period("M")
+grouping_month = mom_log_ret_IND.groupby(per_M)
+ret_per_month = grouping_month.sum()
+#stats for monthly returns
+percent_positive = ret_per_month[ret_per_month>0].count()/ret_per_month.count()
+print("")
+print("percent positive months " + str(percent_positive))
+
+
+################
 #buy and hold
+################
 avg_ret_boh= ret_daily.mean(axis=1)
 cum_ret_boh =  (1 + avg_ret_boh).cumprod()
 #avg_ret_boh= starting_capital*ret_daily.mean(axis=1)
@@ -139,55 +171,28 @@ plt.plot(cum_ret_boh)
 
 
 #stats buy and hold
+print("   ")
 print('Buy and hold stats')
 boh_mean_ret = cum_ret_boh.tail(1)**(1/7)-1
-print(boh_mean_ret)
 boh_vol = (avg_ret_boh.std()*math.sqrt(252))
 boh_sharpe = boh_mean_ret/boh_vol
 boh_kelly_f = boh_mean_ret/boh_vol**2
-print(boh_vol)
-print(boh_sharpe)
-print(boh_kelly_f)
+
 #maxiumum drawdown
 boh_Roll_Max = cum_ret_boh.cummax()
 boh_Daily_Drawdown = cum_ret_boh/boh_Roll_Max - 1.0
 boh_Max_Daily_Drawdown = boh_Daily_Drawdown.cummin()
-print(boh_Max_Daily_Drawdown.tail(1))
+
+
+
+print("CAGR " + str(boh_mean_ret[0]))
+print("Volatility " + str(boh_vol))
+
+print("Sharpe " + str(boh_sharpe[0]))
+print("Kelly fraction " + str(boh_kelly_f[0]))
+
+print("Max drawdown " + str(boh_Max_Daily_Drawdown.tail(1)[0]))
+
 
 print('40-day momentum of short term reversal INDUSTRIALS strategy')
 print(cum_ret.pct_change(40).tail(1))
-
-
-#calculate log returns st reversal momentum strategy
-mom_log_ret_IND = np.log(mom_cum_ret)-np.log(mom_cum_ret.shift(1))
-per = mom_log_ret_IND.index.to_period("Y")
-g = mom_log_ret_IND.groupby(per)
-ret_per_year = g.sum()
-print("st reversal Industrials with factor momentum returns per year")
-print(ret_per_year)
-
-# =============================================================================
-
-# #measure correlation
-# st_rev_RE_IND =mom_daily_ret_RE.to_frame().merge(mom_daily_ret_IND.rename("IND"), how="outer",left_index = True, right_index=True)
-# st_rev_RE_IND = st_rev_RE_IND.dropna(how='all').fillna(0)
-# plt.scatter(st_rev_RE_IND.iloc[:,0],st_rev_RE_IND.iloc[:,1])
-# np.corrcoef(st_rev_RE_IND.iloc[:,0],st_rev_RE_IND.iloc[:,1])
-# stats.pearsonr(st_rev_RE_IND.iloc[:,0],st_rev_RE_IND.iloc[:,1])
-# 
-# comb = (st_rev_RE_IND.iloc[:,0] + st_rev_RE_IND.iloc[:,1])/2
-# cum_comb =(1+comb).cumprod()
-# plt.plot(cum_comb)
-# 
-# print('combined')
-# print(cum_comb.tail(1)**(1/7)-1)
-# print(comb.std()*math.sqrt(252))
-# print((cum_comb.tail(1)**(1/7)-1)/(comb.std()*math.sqrt(252)))
-# print((cum_comb.tail(1)**(1/7)-1)/(comb.std()*math.sqrt(252))**2)
-# 
-# #maxiumum drawdown
-# comb_Roll_Max = cum_comb.cummax()
-# comb_Daily_Drawdown = cum_comb/comb_Roll_Max - 1.0
-# comb_Max_Daily_Drawdown = comb_Daily_Drawdown.cummin()
-# print(comb_Max_Daily_Drawdown.tail(1))
-# =============================================================================

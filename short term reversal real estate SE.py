@@ -87,7 +87,7 @@ cum_ret =(1 + daily_returns_strat).cumprod()
 ##########################################
 
 print("   ")
-print('Short term reversal')
+print('Short term reversal REAL ESTATE')
 mean_ret = cum_ret.tail(1)**(1/7)-1
 print("CAGR " + str(mean_ret[0]))
 vol = (daily_returns_strat.std()*math.sqrt(252))
@@ -148,6 +148,7 @@ ret_per_year = g.sum()
 print("   ")
 print("st reversal Real Estate with factor momentum returns per year")
 print(ret_per_year)
+
 
 per_M = mom_log_ret_RE.index.to_period("M")
 grouping_month = mom_log_ret_RE.groupby(per_M)
