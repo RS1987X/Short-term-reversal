@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Nov 24 11:05:04 2021
+Created on Tue Nov 30 12:24:20 2021
 
-@author: Richard
+@author: richa
 """
 
 
@@ -21,10 +21,7 @@ tday = date.today()
 tday_str = tday.strftime("%Y-%m-%d")
 #=============================================================================
 # =============================================================================
-hist = yf.download('ABB.ST ADDT-B.ST ALFA.ST ALIG.ST ASSA-B.ST ATCO-A.ST BEIJ-B.ST CCC.ST'
-                   ' COIC.ST EPI-A.ST HLDX.ST LIAB.ST LIFCO-B.ST MTRS.ST'
-                   ' NMAN.ST NIBE-B.ST SKA-B.ST SYSR.ST 8TRA.ST NCC-B.ST '
-                   ' TREL-B.ST VOLV-B.ST SAND.ST', start='2015-01-01', end=tday_str)
+hist = yf.download('BTC-USD ETH-USD', start='2015-01-01', end=tday_str)
 # =============================================================================
 #=============================================================================
 # 
@@ -42,19 +39,10 @@ ret_daily = close_prices.pct_change()
 #calculate 5 day returns
 ret_5d = close_prices.pct_change(5)
 
-#generate position indicator bottom 20% = +1 top 25% = -1, exclude stocks with short sale restrictions from top 20%
-#short_sale_restrict = ["FPAR-A.ST", "KFAST-B.ST", "DIOS.ST", "HEBA-B.ST", "TRIAN-B.ST", "CIBUS.ST", "AMAST.ST"]
-#ret_5d_shortable = ret_5d.drop(short_sale_restrict, axis=1)
-#ret_daily_shortable = ret_daily.drop(short_sale_restrict, axis=1)
-percentile80_shortable = ret_5d.quantile(0.9,axis=1)
-short_ind = ret_5d.ge(percentile80_shortable,axis=0)
-#replace false with NaN to get the right average
-short_ind = short_ind.replace(False, np.nan)
-short_returns_daily = -ret_daily*short_ind.shift(1)
-
 #long book position indicator
-percentile20 = ret_5d.quantile(0.1,axis=1)
-long_ind = ret_5d.le(percentile20,axis=0)
+#percentile20 = ret_5d.quantile(0.1,axis=1)
+long_ind = (ret_5d < 0) 
+#long_ind = ret_5d.le(percentile20,axis=0)
 #replace false with NaN to avoid 0s impacting the mean
 long_ind = long_ind.replace(False, np.nan)
 long_returns_daily = ret_daily*long_ind.shift(1)
@@ -69,12 +57,12 @@ n_trans = trans.count().sum()
 trans_value = n_trans*100000
 total_trans_cost = n_trans*29
 
-trans_proc_fee = total_trans_cost/trans_value
+trans_proc_fee =0#total_trans_cost/trans_value
 
 #daily returns of long short strategy
 #avg_long_ret = starting_capital*long_returns_daily.mean(axis=1)-transaction_cost
 avg_long_ret = long_returns_daily.mean(axis=1)-trans_proc_fee
-avg_short_ret = short_returns_daily.mean(axis=1)-trans_proc_fee
+#avg_short_ret = short_returns_daily.mean(axis=1)-trans_proc_fee
 daily_returns_strat = avg_long_ret #+avg_short_ret
 
 #avg_daily_rets  = daily_returns_strat.mean(axis=1)
@@ -91,7 +79,7 @@ cum_ret =(1 + daily_returns_strat).cumprod()
 ##########################################
 
 print("   ")
-print('Short term reversal INDUSTRIALS')
+print('Short term reversal CRYPTO')
 mean_ret = cum_ret.tail(1)**(1/7)-1
 print("CAGR " + str(mean_ret[0]))
 vol = (daily_returns_strat.std()*math.sqrt(252))
@@ -129,7 +117,7 @@ mom_Roll_Max = mom_cum_ret.cummax()
 mom_Daily_Drawdown = mom_cum_ret/mom_Roll_Max - 1.0
 mom_Max_Daily_Drawdown = mom_Daily_Drawdown.cummin()
 print("   ")
-print('Short term reversal with factor momentum INDUSTRIALS')
+print('Short term reversal with factor momentum CRYPTO')
 print("CAGR " + str(mom_mean_ret[0]))
 print("Volatility " + str(mom_vol))
 
@@ -147,7 +135,7 @@ per = mom_log_ret_IND.index.to_period("Y")
 g = mom_log_ret_IND.groupby(per)
 ret_per_year = g.sum()
 print("   ")
-print("st reversal INDUSTRIALS with factor momentum returns per year")
+print("st reversal CRYPTO with factor momentum returns per year")
 print(ret_per_year)
 
 
@@ -170,7 +158,7 @@ avg_ret_boh= ret_daily.mean(axis=1)
 cum_ret_boh =  (1 + avg_ret_boh).cumprod()
 #avg_ret_boh= starting_capital*ret_daily.mean(axis=1)
 #cum_ret_boh =  starting_capital + np.cumsum(avg_ret_boh)
-plt.plot(cum_ret_boh)
+#plt.plot(cum_ret_boh)
 
 
 #stats buy and hold
@@ -197,5 +185,5 @@ print("Kelly fraction " + str(boh_kelly_f[0]))
 print("Max drawdown " + str(boh_Max_Daily_Drawdown.tail(1)[0]))
 
 
-print('40-day momentum of short term reversal INDUSTRIALS strategy')
+print('40-day momentum of short term reversal CRYPTO strategy')
 print(cum_ret.pct_change(40).tail(1))

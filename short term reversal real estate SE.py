@@ -40,6 +40,7 @@ ret_daily = close_prices.pct_change()
 #calculate 5 day returns
 ret_5d = close_prices.pct_change(5)
 
+
 #generate position indicator bottom 20% = +1 top 25% = -1, exclude stocks with short sale restrictions from top 20%
 short_sale_restrict = ["FPAR-A.ST", "KFAST-B.ST", "DIOS.ST", "HEBA-B.ST", "TRIAN-B.ST", "CIBUS.ST", "AMAST.ST"]
 ret_5d_shortable = ret_5d.drop(short_sale_restrict, axis=1)
@@ -52,7 +53,9 @@ short_returns_daily = -ret_daily_shortable*short_ind.shift(1)
 
 
 percentile20 = ret_5d.quantile(0.2,axis=1)
-long_ind = ret_5d.le(percentile20,axis=0)
+long_ind = (ret_5d.le(percentile20,axis=0))
+
+#long_ind = (ret_5d < 0) 
 #replace false with NaN to avoid 0s impacting the mean
 long_ind = long_ind.replace(False, np.nan)
 long_returns_daily = ret_daily*long_ind.shift(1)
@@ -71,7 +74,7 @@ trans_proc_fee = total_trans_cost/trans_value
 #avg_long_ret = starting_capital*long_returns_daily.mean(axis=1)-transaction_cost
 avg_long_ret = long_returns_daily.mean(axis=1)-trans_proc_fee
 avg_short_ret = short_returns_daily.mean(axis=1)-trans_proc_fee
-daily_returns_strat = avg_long_ret #+avg_short_ret
+daily_returns_strat = avg_long_ret.dropna(how='all').fillna(0) #+avg_short_ret
 
 #avg_daily_rets  = daily_returns_strat.mean(axis=1)
 
@@ -170,7 +173,6 @@ cum_ret_boh =  (1 + avg_ret_boh).cumprod()
 #avg_ret_boh= starting_capital*ret_daily.mean(axis=1)
 #cum_ret_boh =  starting_capital + np.cumsum(avg_ret_boh)
 plt.plot(cum_ret_boh)
-
 
 #stats buy and hold
 print("   ")
