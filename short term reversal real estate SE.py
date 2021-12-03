@@ -19,20 +19,39 @@ from datetime import date
 
 tday = date.today()
 tday_str = tday.strftime("%Y-%m-%d")
+
+re_names = 'BALD-B.ST BRIN-B.ST SAGA-B.ST SBB-B.ST CAST.ST WALL-B.ST FABG.ST CORE-B.ST WIHL.ST' \
+           ' NYF.ST HUFV-A.ST KLED.ST FPAR-A.ST ATRLJ-B.ST CATE.ST NP3.ST PLAZ-B.ST' \
+           ' KFAST-B.ST DIOS.ST HEBA-B.ST TRIAN-B.ST CIBUS.ST BONAV-B.ST AMAST.ST' \
+           ' PNDX-B.ST JM.ST SFAST.ST JOMA.ST'
 #=============================================================================
 # =============================================================================
-hist = yf.download('BALD-B.ST BRIN-B.ST SAGA-B.ST SBB-B.ST CAST.ST WALL-B.ST FABG.ST CORE-B.ST WIHL.ST'
-                    ' NYF.ST HUFV-A.ST KLED.ST FPAR-A.ST ATRLJ-B.ST CATE.ST NP3.ST PLAZ-B.ST'
-                    ' KFAST-B.ST DIOS.ST HEBA-B.ST TRIAN-B.ST CIBUS.ST BONAV-B.ST AMAST.ST'
-                    ' PNDX-B.ST JM.ST SFAST.ST JOMA.ST', start='2015-01-01', end=tday_str)
+hist = yf.download(re_names, start='2015-01-01', end=tday_str)
 # =============================================================================
 #=============================================================================
+
 
 close_prices = hist["Adj Close"]#.dropna(how='all').fillna(0)
 volumes = hist["Volume"].dropna(how='all').fillna(0)
+
+r_vol=volumes/volumes.rolling(100).mean().shift(1)
+
+
+#add current price
 #close_prices = close_prices.drop('2020-01-01')
-
-
+# =============================================================================
+# close_prices.append(pd.Series(), ignore_index=True)
+# 
+# 
+# 
+# re_names_df = re_names.split(" ")
+# for x in re_names_df:
+#     stock_data = yf.Ticker(x)
+#     curr_mid = (stock_data.info["bid"] + stock_data.info["ask"])/2
+#     close_prices[x] = curr_mid
+# 
+# 
+# =============================================================================
 
 #calculate daily returns
 ret_daily = close_prices.pct_change()
@@ -41,19 +60,29 @@ ret_daily = close_prices.pct_change()
 ret_5d = close_prices.pct_change(5)
 
 
-#generate position indicator bottom 20% = +1 top 25% = -1, exclude stocks with short sale restrictions from top 20%
-short_sale_restrict = ["FPAR-A.ST", "KFAST-B.ST", "DIOS.ST", "HEBA-B.ST", "TRIAN-B.ST", "CIBUS.ST", "AMAST.ST"]
-ret_5d_shortable = ret_5d.drop(short_sale_restrict, axis=1)
-ret_daily_shortable = ret_daily.drop(short_sale_restrict, axis=1)
-percentile80_shortable = ret_5d_shortable.quantile(0.75,axis=1)
-short_ind = ret_5d_shortable.ge(percentile80_shortable,axis=0)
-#replace false with NaN to get the right average
-short_ind = short_ind.replace(False, np.nan)
-short_returns_daily = -ret_daily_shortable*short_ind.shift(1)
+# =============================================================================
+# #generate position indicator bottom 20% = +1 top 25% = -1, exclude stocks with short sale restrictions from top 20%
+# short_sale_restrict = ["FPAR-A.ST", "KFAST-B.ST", "DIOS.ST", "HEBA-B.ST", "TRIAN-B.ST", "CIBUS.ST", "AMAST.ST"]
+# ret_5d_shortable = ret_5d.drop(short_sale_restrict, axis=1)
+# ret_daily_shortable = ret_daily.drop(short_sale_restrict, axis=1)
+# percentile80_shortable = ret_5d_shortable.quantile(0.75,axis=1)
+# short_ind = ret_5d_shortable.ge(percentile80_shortable,axis=0)
+# #replace false with NaN to get the right average
+# short_ind = short_ind.replace(False, np.nan)
+# short_returns_daily = -ret_daily_shortable*short_ind.shift(1)
+# 
+# =============================================================================
+
 
 
 percentile20 = ret_5d.quantile(0.2,axis=1)
-long_ind = (ret_5d.le(percentile20,axis=0))
+
+#create binary dataframe to exclude stocks with big move large volume days in the last n sessions
+significant_days = (r_vol > 5) & (ret_daily < -0.06)
+ 
+not_excluded = significant_days.rolling(5).sum() < 1
+#create position indicator df
+long_ind = (ret_5d.le(percentile20,axis=0)) & not_excluded
 
 #long_ind = (ret_5d < 0) 
 #replace false with NaN to avoid 0s impacting the mean
@@ -73,7 +102,7 @@ trans_proc_fee = total_trans_cost/trans_value
 #daily returns of long short strategy
 #avg_long_ret = starting_capital*long_returns_daily.mean(axis=1)-transaction_cost
 avg_long_ret = long_returns_daily.mean(axis=1)-trans_proc_fee
-avg_short_ret = short_returns_daily.mean(axis=1)-trans_proc_fee
+#avg_short_ret = short_returns_daily.mean(axis=1)-trans_proc_fee
 daily_returns_strat = avg_long_ret.dropna(how='all').fillna(0) #+avg_short_ret
 
 #avg_daily_rets  = daily_returns_strat.mean(axis=1)
