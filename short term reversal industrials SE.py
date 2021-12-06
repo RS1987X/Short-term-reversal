@@ -61,13 +61,13 @@ ret_5d = close_prices.pct_change(5)
 percentile20 = ret_5d.quantile(0.1,axis=1)
 
 
-#create binary dataframe to exclude stocks with big move large volume days in the last 5 sessions
-significant_days = (r_vol > 5) & (ret_daily < -0.05)
- 
+#create binary dataframe to exclude stocks with big move large volume days in the last 3 sessions
+significant_days = (r_vol > 5) & (ret_daily < -0)
+
 not_excluded = significant_days.rolling(3).sum() < 1
 
 
-long_ind = ret_5d.le(percentile20,axis=0)# & not_excluded
+long_ind = ret_5d.le(percentile20,axis=0) & not_excluded
 #replace false with NaN to avoid 0s impacting the mean
 long_ind = long_ind.replace(False, np.nan)
 long_returns_daily = ret_daily*long_ind.shift(1)

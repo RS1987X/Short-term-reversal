@@ -40,17 +40,19 @@ r_vol=volumes/volumes.rolling(100).mean().shift(1)
 #add current price
 #close_prices = close_prices.drop('2020-01-01')
 # =============================================================================
-# close_prices.append(pd.Series(), ignore_index=True)
+# =============================================================================
+# index = close_prices.index.append(pd.Index([tday]))
 # 
-# 
+# close_prices = close_prices.append(pd.Series(), ignore_index=True)
+# close_prices=close_prices.set_index(index)
 # 
 # re_names_df = re_names.split(" ")
 # for x in re_names_df:
-#     stock_data = yf.Ticker(x)
-#     curr_mid = (stock_data.info["bid"] + stock_data.info["ask"])/2
-#     close_prices[x] = curr_mid
-# 
-# 
+#      stock_data = yf.Ticker(x)
+#      curr_mid = (stock_data.info["bid"] + stock_data.info["ask"])/2
+#      close_prices.loc[close_prices.tail(1).index,x] = curr_mid
+# =============================================================================
+
 # =============================================================================
 
 #calculate daily returns
@@ -78,7 +80,7 @@ ret_5d = close_prices.pct_change(5)
 percentile20 = ret_5d.quantile(0.2,axis=1)
 
 #create binary dataframe to exclude stocks with big move large volume days in the last n sessions
-significant_days = (r_vol > 5) & (ret_daily < -0.06)
+significant_days = (r_vol > 5) & (ret_daily < -0.05)
  
 not_excluded = significant_days.rolling(5).sum() < 1
 #create position indicator df
