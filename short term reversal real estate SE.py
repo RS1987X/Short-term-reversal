@@ -58,9 +58,15 @@ r_vol=volumes/volumes.rolling(100).mean().shift(1)
 #calculate daily returns
 ret_daily = close_prices.pct_change()
 
+volatility=ret_daily.rolling(20).std().shift(1)
+
+
+
 #calculate 5 day returns
 ret_5d = close_prices.pct_change(5)
 
+
+n_std_ret5d =ret_5d/(volatility*math.sqrt(5))
 
 # =============================================================================
 # #generate position indicator bottom 20% = +1 top 25% = -1, exclude stocks with short sale restrictions from top 20%
@@ -78,13 +84,15 @@ ret_5d = close_prices.pct_change(5)
 
 
 percentile20 = ret_5d.quantile(0.2,axis=1)
+percentile80 = ret_5d.quantile(0.8,axis=1)
+spread = percentile80-percentile20
 
 #create binary dataframe to exclude stocks with big move large volume days in the last n sessions
 significant_days = (r_vol > 5) & (ret_daily < -0.05)
  
 not_excluded = significant_days.rolling(5).sum() < 1
 #create position indicator df
-long_ind = (ret_5d.le(percentile20,axis=0)) & not_excluded
+long_ind = (ret_5d.le(percentile20,axis=0)) & not_excluded 
 
 #long_ind = (ret_5d < 0) 
 #replace false with NaN to avoid 0s impacting the mean
@@ -103,7 +111,7 @@ trans_proc_fee = total_trans_cost/trans_value
 
 #daily returns of long short strategy
 #avg_long_ret = starting_capital*long_returns_daily.mean(axis=1)-transaction_cost
-avg_long_ret = long_returns_daily.mean(axis=1)-trans_proc_fee
+avg_long_ret = long_returns_daily.mean(axis=1)-trans_proc_fee 
 #avg_short_ret = short_returns_daily.mean(axis=1)-trans_proc_fee
 daily_returns_strat = avg_long_ret.dropna(how='all').fillna(0) #+avg_short_ret
 
@@ -153,7 +161,7 @@ mom_daily_ret_RE = mom_cum_ret.pct_change()
 
 mom_mean_ret = mom_cum_ret.tail(1)**(1/7)-1
 
-mom_vol = (daily_returns_strat[cum_ret.pct_change(20).shift(1) > 0].std()*math.sqrt(252))
+mom_vol = (daily_returns_strat[cum_ret.pct_change(20).shift(1) > 0].std()*math.sqrt(mom_cum_ret.count()/7))
 mom_sharpe = mom_mean_ret/mom_vol
 mom_kelly_f = mom_mean_ret/mom_vol**2
 
