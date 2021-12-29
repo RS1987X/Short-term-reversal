@@ -25,7 +25,7 @@ tday_str = tday.strftime("%Y-%m-%d")
 hist = yf.download('ABB.ST ADDT-B.ST ALFA.ST ALIG.ST ASSA-B.ST ATCO-A.ST BEIJ-B.ST'
                    ' COIC.ST EPI-A.ST HLDX.ST LIAB.ST LIFCO-B.ST MTRS.ST'
                    ' NMAN.ST NIBE-B.ST SKA-B.ST SYSR.ST 8TRA.ST NCC-B.ST '
-                   ' TREL-B.ST VOLV-B.ST SAND.ST', start='2015-01-01', end=tday_str)
+                   ' TREL-B.ST VOLV-B.ST SAND.ST PEAB-B.ST INWI.ST', start='2015-01-01', end=tday_str)
 # =============================================================================
 #=============================================================================
 # 
@@ -81,12 +81,13 @@ n_trans = trans.count().sum()
 
 trans_value = n_trans*100000
 total_trans_cost = n_trans*29
+slippage = 0.05/100
 
 trans_proc_fee = total_trans_cost/trans_value
 
 #daily returns of long short strategy
 #avg_long_ret = starting_capital*long_returns_daily.mean(axis=1)-transaction_cost
-avg_long_ret = long_returns_daily.mean(axis=1)-trans_proc_fee
+avg_long_ret = long_returns_daily.mean(axis=1)-trans_proc_fee-slippage
 #avg_short_ret = short_returns_daily.mean(axis=1)-trans_proc_fee
 daily_returns_strat = avg_long_ret #+avg_short_ret
 

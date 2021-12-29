@@ -106,12 +106,13 @@ n_trans = trans.count().sum()
 
 trans_value = n_trans*75000
 total_trans_cost = n_trans*29
+slippage = 0.05/100
 
 trans_proc_fee = total_trans_cost/trans_value
 
 #daily returns of long short strategy
 #avg_long_ret = starting_capital*long_returns_daily.mean(axis=1)-transaction_cost
-avg_long_ret = long_returns_daily.mean(axis=1)-trans_proc_fee 
+avg_long_ret = long_returns_daily.mean(axis=1)-trans_proc_fee - slippage
 #avg_short_ret = short_returns_daily.mean(axis=1)-trans_proc_fee
 daily_returns_strat = avg_long_ret.dropna(how='all').fillna(0) #+avg_short_ret
 
