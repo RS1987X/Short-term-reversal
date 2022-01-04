@@ -106,7 +106,7 @@ n_trans = trans.count().sum()
 
 trans_value = n_trans*75000
 total_trans_cost = n_trans*29
-slippage = 0.05/100
+slippage = 0.0/100
 
 trans_proc_fee = total_trans_cost/trans_value
 

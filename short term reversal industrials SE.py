@@ -58,7 +58,7 @@ ret_5d = close_prices.pct_change(5)
 # =============================================================================
 
 #long book position indicator
-percentile20 = ret_5d.quantile(0.1,axis=1)
+percentile20 = ret_5d.quantile(0.15,axis=1)
 
 
 #create binary dataframe to exclude stocks with big move large volume days in the last 3 sessions
@@ -81,7 +81,7 @@ n_trans = trans.count().sum()
 
 trans_value = n_trans*100000
 total_trans_cost = n_trans*29
-slippage = 0.05/100
+slippage = 0.0/100
 
 trans_proc_fee = total_trans_cost/trans_value
 
