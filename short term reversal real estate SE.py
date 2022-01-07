@@ -21,9 +21,9 @@ tday = date.today()
 tday_str = tday.strftime("%Y-%m-%d")
 
 re_names = 'BALD-B.ST BRIN-B.ST SAGA-B.ST SBB-B.ST CAST.ST WALL-B.ST FABG.ST CORE-B.ST WIHL.ST' \
-           ' NYF.ST HUFV-A.ST KLED.ST FPAR-A.ST ATRLJ-B.ST CATE.ST NP3.ST PLAZ-B.ST' \
-           ' KFAST-B.ST DIOS.ST HEBA-B.ST TRIAN-B.ST CIBUS.ST BONAV-B.ST AMAST.ST' \
-           ' PNDX-B.ST JM.ST SFAST.ST JOMA.ST'
+           ' NYF.ST HUFV-A.ST FPAR-A.ST ATRLJ-B.ST CATE.ST NP3.ST PLAZ-B.ST' \
+           ' KFAST-B.ST DIOS.ST HEBA-B.ST TRIAN-B.ST CIBUS.ST BONAV-B.ST' \
+           ' PNDX-B.ST JM.ST SFAST.ST'
 #=============================================================================
 # =============================================================================
 hist = yf.download(re_names, start='2015-01-01', end=tday_str)
