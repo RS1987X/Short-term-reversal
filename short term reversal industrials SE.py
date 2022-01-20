@@ -25,7 +25,7 @@ tday_str = tday.strftime("%Y-%m-%d")
 hist = yf.download('ABB.ST ADDT-B.ST ALFA.ST ALIG.ST ASSA-B.ST ATCO-A.ST BEIJ-B.ST'
                    ' COIC.ST EPI-A.ST HLDX.ST LIAB.ST LIFCO-B.ST MTRS.ST'
                    ' NMAN.ST NIBE-B.ST SKA-B.ST SYSR.ST 8TRA.ST NCC-B.ST '
-                   ' TREL-B.ST VOLV-B.ST SAND.ST PEAB-B.ST INWI.ST', start='2015-01-01', end=tday_str)
+                   ' TREL-B.ST VOLV-B.ST SAND.ST PEAB-B.ST INWI.ST INDT.ST', start='2015-01-01', end=tday_str)
 # =============================================================================
 #=============================================================================
 # 
@@ -127,14 +127,14 @@ plt.plot(cum_ret)
 #modified strategy considering factor momentum
 ####################################################
 
-mom_cum_ret = (1+daily_returns_strat[cum_ret.pct_change(20).shift(1) > 0]).cumprod()
+mom_cum_ret = (1+daily_returns_strat[cum_ret.pct_change(40).shift(1) > 0]).cumprod() #
 #mom_cum_ret = starting_capital + np.cumsum(daily_returns_strat[cum_ret.pct_change(20).shift(1) > 0])
 mom_daily_ret_IND = mom_cum_ret.pct_change()
 
 
 mom_mean_ret = mom_cum_ret.tail(1)**(1/7)-1
 
-mom_vol = (daily_returns_strat[cum_ret.pct_change(40).shift(1) > 0].std()*math.sqrt(252))
+mom_vol = (daily_returns_strat[cum_ret.pct_change(40).shift(1) > 0].std()*math.sqrt(252)) #
 mom_sharpe = mom_mean_ret/mom_vol
 mom_kelly_f = mom_mean_ret/mom_vol**2
 
