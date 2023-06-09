@@ -65,17 +65,20 @@ volumes.dropna(axis=0, how='all', inplace=True)
 avg_volume = volumes.shift(1).rolling(10).mean()
 ret = close_prices/close_prices.shift(1)-1
 ret_5d = close_prices.shift(1)/close_prices.shift(6)-1
+ret_20d = close_prices.shift(1)/close_prices.shift(21)-1
+
 consecutive_neg_returns = (ret.shift(1) < 0) & (ret.shift(2) < 0) & (ret.shift(3) < 0)
 big_downday = (ret < -0.15)
 high_volume = volumes > 5*avg_volume
-close_high = (high_prices - close_prices) < 0.5*(high_prices - low_prices)
-close_low = (close_prices-low_prices) < 0.5*(high_prices - low_prices)
+close_high = (high_prices - close_prices) < 0.1*(high_prices - low_prices)
+close_low = (close_prices-low_prices) < 0.1*(high_prices - low_prices)
 big_bounce = (close_prices - low_prices) > 0.15
+rng = (high_prices - low_prices)/close_prices > 0.075
 
+I =  big_downday.shift(3) & high_volume.shift(3) & (ret_5d.shift(3) < 0) & (ret.shift(0)<0) #& (ret.shift(-1)<0)
+I = (ret_20d>0.1) & close_low & rng
 
-I =  big_downday.shift(3) & high_volume.shift(3) & (ret_5d.shift(3) < 0) & (ret.shift(0)>0) #& (ret.shift(-1)<0)
-
-return_fwd = (close_prices.shift(-1)/close_prices.shift(0)-1)
+return_fwd = (close_prices.shift(-2)/close_prices.shift(0)-1)
 returns = return_fwd.copy()
 
 #return_fwd_2d = (close_prices.shift(-2)/close_prices.shift(-1)-1)
