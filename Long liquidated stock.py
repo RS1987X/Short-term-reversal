@@ -73,12 +73,11 @@ high_volume = volumes > 5*avg_volume
 close_high = (high_prices - close_prices) < 0.1*(high_prices - low_prices)
 close_low = (close_prices-low_prices) < 0.1*(high_prices - low_prices)
 big_bounce = (close_prices - low_prices) > 0.15
-rng = (high_prices - low_prices)/close_prices > 0.075
+rng = (high_prices - low_prices)/close_prices > 0.1
 
 I =  big_downday.shift(3) & high_volume.shift(3) & (ret_5d.shift(3) < 0) & (ret.shift(0)<0) #& (ret.shift(-1)<0)
-I = (ret_20d>0.1) & close_low & rng
 
-return_fwd = (close_prices.shift(-2)/close_prices.shift(0)-1)
+return_fwd = (close_prices.shift(-1)/close_prices.shift(0)-1)
 returns = return_fwd.copy()
 
 #return_fwd_2d = (close_prices.shift(-2)/close_prices.shift(-1)-1)
