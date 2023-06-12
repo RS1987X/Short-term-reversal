@@ -59,10 +59,11 @@ low_prices.ffill(axis=0,inplace=True)
 
 volumes = hist["Volume"].dropna(how='all')  # .fillna(0)
 volumes.dropna(axis=0, how='all', inplace=True)
+volumes.ffill(axis=0,inplace=True)
 #volumes = volumes.drop([pd.Timestamp('2018-06-06 00:00:00'), pd.Timestamp('2018-06-22 00:00:00'),
 #                       pd.Timestamp('2017-06-23 00:00:00'), pd.Timestamp('2017-06-06 00:00:00')])
 
-avg_volume = volumes.shift(1).rolling(10).mean()
+avg_volume = volumes.shift(0).rolling(10).mean()
 ret = close_prices/close_prices.shift(1)-1
 ret_5d = close_prices.shift(1)/close_prices.shift(6)-1
 ret_20d = close_prices.shift(1)/close_prices.shift(21)-1
@@ -75,7 +76,7 @@ close_low = (close_prices-low_prices) < 0.1*(high_prices - low_prices)
 big_bounce = (close_prices - low_prices) > 0.15
 rng = (high_prices - low_prices)/close_prices > 0.1
 
-I =  big_downday.shift(3) & high_volume.shift(3) & (ret_5d.shift(3) < 0) & (ret.shift(0)<0) #& (ret.shift(-1)<0)
+I =  big_downday.shift(3) & high_volume.shift(3) & (ret_5d.shift(3) < 0)# & (ret.shift(0)<0)# & (ret.shift(-1)<0)
 
 return_fwd = (close_prices.shift(-1)/close_prices.shift(0)-1)
 returns = return_fwd.copy()
