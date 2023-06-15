@@ -26,7 +26,7 @@ tday = date.today()
 tday_str = tday.strftime("%Y-%m-%d")
 
 
-data = pd.read_csv(r".\universe mcap above 1 mdr SEK 20230607.csv",delimiter=";")
+data = pd.read_csv(r".\universe all listed sweden.csv",delimiter=";")
  
 yf_names = data["Yahoo finance name"]
 
@@ -41,30 +41,49 @@ hist = yf.download(tickers, start='2019-01-01', end=tday_str)
 
 # .dropna(how='all',inplace = True)#.fillna(0)
 close_prices = hist["Close"]
-close_prices.dropna(axis=0, how='all', inplace=True)
-close_prices.ffill(axis=0,inplace=True)
+#close_prices.dropna(axis=0, how='all', inplace=True)
+close_prices_ffill = close_prices.ffill(axis=0)
 
 open_prices = hist["Open"]
-open_prices.dropna(axis=0, how='all', inplace=True)
-open_prices.ffill(axis=0,inplace=True)
+#open_prices.dropna(axis=0, how='all', inplace=True)
+open_prices_ffill = open_prices.ffill(axis=0)
     
 #close_prices = close_prices.drop([pd.Timestamp('2023-05-31 00:00:00')])#, pd.Timestamp(
  #   '2018-06-22 00:00:00'), pd.Timestamp('2017-06-23 00:00:00'), pd.Timestamp('2017-06-06 00:00:00')])
 high_prices = hist["High"]
-high_prices.ffill(axis=0,inplace=True)
+high_prices_ffill = high_prices.ffill(axis=0)
 low_prices = hist["Low"]
-low_prices.ffill(axis=0,inplace=True)
+low_prices_ffill = low_prices.ffill(axis=0)
 #high_prices = high_prices.drop([pd.Timestamp('2018-06-06 00:00:00'), pd.Timestamp(
 #    '2018-06-22 00:00:00'), pd.Timestamp('2017-06-23 00:00:00'), pd.Timestamp('2017-06-06 00:00:00')])
 
 volumes = hist["Volume"].dropna(how='all')  # .fillna(0)
-volumes.dropna(axis=0, how='all', inplace=True)
-volumes.ffill(axis=0,inplace=True)
+#volumes.dropna(axis=0, how='all', inplace=True)
+volumes_ffill = volumes.ffill(axis=0)
 #volumes = volumes.drop([pd.Timestamp('2018-06-06 00:00:00'), pd.Timestamp('2018-06-22 00:00:00'),
 #                       pd.Timestamp('2017-06-23 00:00:00'), pd.Timestamp('2017-06-06 00:00:00')])
 
-avg_volume = volumes.shift(0).rolling(10).mean()
+avg_volume = volumes_ffill.shift(0).rolling(10).mean()
 ret = close_prices/close_prices.shift(1)-1
+
+turnover = volumes_ffill*(close_prices_ffill + open_prices_ffill +high_prices_ffill + low_prices_ffill)/4
+
+amihud_il = 1000000*(abs(ret.shift(1))/turnover.shift(1))
+
+avg_amihud_il = amihud_il.rolling(10).mean().ffill(axis=0)
+
+
+liq_threshold_1 = avg_amihud_il.quantile(q=0.2,axis=1)
+liq_threshold_2 = avg_amihud_il.quantile(q=0.4,axis=1)
+liq_threshold_3 = avg_amihud_il.quantile(q=0.6,axis=1)
+liq_threshold_4 = avg_amihud_il.quantile(q=0.8,axis=1)
+
+liq_segment_1 = avg_amihud_il.le(liq_threshold_1,axis=0)
+liq_segment_2 = avg_amihud_il.ge(liq_threshold_1,axis=0) & avg_amihud_il.le(liq_threshold_2,axis=0)
+liq_segment_3 = avg_amihud_il.ge(liq_threshold_2,axis=0) & avg_amihud_il.le(liq_threshold_3,axis=0)
+liq_segment_4 = avg_amihud_il.ge(liq_threshold_3,axis=0) & avg_amihud_il.le(liq_threshold_4,axis=0)
+liq_segment_5 = avg_amihud_il.ge(liq_threshold_4,axis=0)
+
 ret_5d = close_prices.shift(1)/close_prices.shift(6)-1
 ret_20d = close_prices.shift(1)/close_prices.shift(21)-1
 
@@ -76,7 +95,7 @@ close_low = (close_prices-low_prices) < 0.1*(high_prices - low_prices)
 big_bounce = (close_prices - low_prices) > 0.15
 rng = (high_prices - low_prices)/close_prices > 0.1
 
-I =  big_downday.shift(3) & high_volume.shift(3) & (ret_5d.shift(3) < 0)# & (ret.shift(0)<0)# & (ret.shift(-1)<0)
+I =  big_downday.shift(3) & high_volume.shift(3) & (ret_5d.shift(3) < 0) & (liq_segment_1) #&  & #(ret.shift(0)>0.)# & (ret.shift(-1)<0)
 
 return_fwd = (close_prices.shift(-1)/close_prices.shift(0)-1)
 returns = return_fwd.copy()
@@ -91,6 +110,10 @@ print(returns_strategy[returns_strategy!=0].stack().std())
 kelly= returns_strategy[returns_strategy!=0].stack().mean()/(returns_strategy[returns_strategy!=0].stack().std()**2)
 print("Strategy Kelly fraction")
 print(kelly)
+print("Trimmed mean")
+print(stats.trim_mean(returns_strategy[returns_strategy!=0].stack(),0.05))
+
+
 
 #calculate returns
 long_ret = returns_strategy.fillna(0)
@@ -101,17 +124,19 @@ strat_ret = long_ret[long_ret!=0].mean(axis=1).fillna(0) #+short_ret
 cum_ret = np.cumprod(strat_ret+1)
 plt.figure()
 plt.plot(cum_ret.ffill())
+returns_strategy[returns_strategy!=0].stack().hist(bins=100)
 
+
+rolling_high = cum_ret.cummax()
+draw_down = cum_ret/rolling_high-1
+max_dd = draw_down.cummin().tail(1)
+print("Max draw down")
+print(max_dd)
 
 liquidated_stocks = big_downday.shift(2) & high_volume.shift(2) & (ret_5d.shift(2) < 0)
 #list the values for change in liquidity by name
 liquidated_stocks_last = liquidated_stocks.tail(1).T
 
-#remove all names with z-score less than 2
-# I_names = I_last[I_last[I]]
-# I_last.dropna(how='any',inplace=True)
-
-#I_last.drop(I_last[I_last,inplace=True)
 
 names = liquidated_stocks_last.set_axis(['Liquidated names'], axis=1)
 names_sorted = names.sort_values(by=['Liquidated names'])
