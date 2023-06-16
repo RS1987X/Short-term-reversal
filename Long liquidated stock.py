@@ -57,14 +57,14 @@ low_prices_ffill = low_prices.ffill(axis=0)
 #high_prices = high_prices.drop([pd.Timestamp('2018-06-06 00:00:00'), pd.Timestamp(
 #    '2018-06-22 00:00:00'), pd.Timestamp('2017-06-23 00:00:00'), pd.Timestamp('2017-06-06 00:00:00')])
 
-volumes = hist["Volume"].dropna(how='all')  # .fillna(0)
+volumes = hist["Volume"]#.dropna(how='all')  # .fillna(0)
 #volumes.dropna(axis=0, how='all', inplace=True)
 volumes_ffill = volumes.ffill(axis=0)
 #volumes = volumes.drop([pd.Timestamp('2018-06-06 00:00:00'), pd.Timestamp('2018-06-22 00:00:00'),
 #                       pd.Timestamp('2017-06-23 00:00:00'), pd.Timestamp('2017-06-06 00:00:00')])
 
 avg_volume = volumes_ffill.shift(0).rolling(10).mean()
-ret = close_prices/close_prices.shift(1)-1
+ret = close_prices_ffill/close_prices_ffill.shift(1)-1
 
 turnover = volumes_ffill*(close_prices_ffill + open_prices_ffill +high_prices_ffill + low_prices_ffill)/4
 
@@ -84,7 +84,7 @@ liq_segment_3 = avg_amihud_il.ge(liq_threshold_2,axis=0) & avg_amihud_il.le(liq_
 liq_segment_4 = avg_amihud_il.ge(liq_threshold_3,axis=0) & avg_amihud_il.le(liq_threshold_4,axis=0)
 liq_segment_5 = avg_amihud_il.ge(liq_threshold_4,axis=0)
 
-ret_5d = close_prices.shift(1)/close_prices.shift(6)-1
+ret_5d = close_prices_ffill.shift(1)/close_prices_ffill.shift(6)-1
 ret_20d = close_prices.shift(1)/close_prices.shift(21)-1
 
 consecutive_neg_returns = (ret.shift(1) < 0) & (ret.shift(2) < 0) & (ret.shift(3) < 0)
@@ -124,7 +124,7 @@ strat_ret = long_ret[long_ret!=0].mean(axis=1).fillna(0) #+short_ret
 cum_ret = np.cumprod(strat_ret+1)
 plt.figure()
 plt.plot(cum_ret.ffill())
-returns_strategy[returns_strategy!=0].stack().hist(bins=100)
+#returns_strategy[returns_strategy!=0].stack().hist(bins=100)
 
 
 rolling_high = cum_ret.cummax()
@@ -133,7 +133,7 @@ max_dd = draw_down.cummin().tail(1)
 print("Max draw down")
 print(max_dd)
 
-liquidated_stocks = big_downday.shift(2) & high_volume.shift(2) & (ret_5d.shift(2) < 0)
+liquidated_stocks = big_downday.shift(2) & high_volume.shift(2) & (ret_5d.shift(2) < 0) & (liq_segment_1)
 #list the values for change in liquidity by name
 liquidated_stocks_last = liquidated_stocks.tail(1).T
 
