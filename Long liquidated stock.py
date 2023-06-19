@@ -40,7 +40,7 @@ hist = yf.download(tickers, start='2019-01-01', end=tday_str)
 # =============================================================================
 
 # .dropna(how='all',inplace = True)#.fillna(0)
-close_prices = hist["Close"]
+close_prices = hist["Adj Close"]
 #close_prices.dropna(axis=0, how='all', inplace=True)
 close_prices_ffill = close_prices.ffill(axis=0)
 
@@ -132,6 +132,16 @@ draw_down = cum_ret/rolling_high-1
 max_dd = draw_down.cummin().tail(1)
 print("Max draw down")
 print(max_dd)
+
+
+#calculate log returns by year
+log_cum_ret = np.log(strat_ret+1)
+per = log_cum_ret.index.to_period("Y")
+g = log_cum_ret.groupby(per)
+ret_per_year = g.sum()
+print("   ")
+print("Long liquidated stock returns by year")
+print(ret_per_year)
 
 liquidated_stocks = big_downday.shift(2) & high_volume.shift(2) & (ret_5d.shift(2) < 0) & (liq_segment_1)
 #list the values for change in liquidity by name
