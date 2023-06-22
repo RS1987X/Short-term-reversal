@@ -35,7 +35,7 @@ tickers = yf_names.str.cat(sep=" ")
 
 # =============================================================================
 # ============================================================================
-hist = yf.download(tickers, start='2019-01-01', end=tday_str)
+hist = yf.download(tickers, start='2015-01-01', end=tday_str)
 # ============================================================================
 # =============================================================================
 
@@ -85,19 +85,19 @@ liq_segment_4 = avg_amihud_il.ge(liq_threshold_3,axis=0) & avg_amihud_il.le(liq_
 liq_segment_5 = avg_amihud_il.ge(liq_threshold_4,axis=0)
 
 ret_5d = close_prices_ffill.shift(1)/close_prices_ffill.shift(6)-1
-ret_20d = close_prices.shift(1)/close_prices.shift(21)-1
+ret_20d = close_prices_ffill.shift(1)/close_prices_ffill.shift(21)-1
 
 consecutive_neg_returns = (ret.shift(1) < 0) & (ret.shift(2) < 0) & (ret.shift(3) < 0)
 big_downday = (ret < -0.15)
-high_volume = volumes > 5*avg_volume
+high_volume = volumes > 3*avg_volume
 close_high = (high_prices - close_prices) < 0.1*(high_prices - low_prices)
 close_low = (close_prices-low_prices) < 0.1*(high_prices - low_prices)
 big_bounce = (close_prices - low_prices) > 0.15
 rng = (high_prices - low_prices)/close_prices > 0.1
 
-I =  big_downday.shift(3) & high_volume.shift(3) & (ret_5d.shift(3) < 0) & (liq_segment_1) #&  & #(ret.shift(0)>0.)# & (ret.shift(-1)<0)
+I =  big_downday.shift(3) & high_volume.shift(3) &(ret_5d.shift(3) < 0) & (liq_segment_1) #& (ret_5d.shift(3) < 0)#&  & #(ret.shift(0)>0.)# & (ret.shift(-1)<0)
 
-return_fwd = (close_prices.shift(-1)/close_prices.shift(0)-1)
+return_fwd = (close_prices.shift(-5)/close_prices.shift(0)-1)
 returns = return_fwd.copy()
 
 #return_fwd_2d = (close_prices.shift(-2)/close_prices.shift(-1)-1)
@@ -112,7 +112,6 @@ print("Strategy Kelly fraction")
 print(kelly)
 print("Trimmed mean")
 print(stats.trim_mean(returns_strategy[returns_strategy!=0].stack(),0.05))
-
 
 
 #calculate returns
@@ -143,13 +142,66 @@ print("   ")
 print("Long liquidated stock returns by year")
 print(ret_per_year)
 
+
 liquidated_stocks = big_downday.shift(2) & high_volume.shift(2) & (ret_5d.shift(2) < 0) & (liq_segment_1)
 #list the values for change in liquidity by name
 liquidated_stocks_last = liquidated_stocks.tail(1).T
 
-
 names = liquidated_stocks_last.set_axis(['Liquidated names'], axis=1)
 names_sorted = names.sort_values(by=['Liquidated names'])
 
-output_liquidated_stocks = pd.DataFrame()
-output_liquidated_stocks["Names"] = names_sorted
+#reformat names to infront
+names = names_sorted[names_sorted==True].dropna()
+names = names.index.to_frame()
+names.columns  =['Liquidated names']
+names = pd.DataFrame(names['Liquidated names'].str.replace(r'.ST$', ''))
+names =  pd.DataFrame(names['Liquidated names'].str.replace(r'-', ' '))
+
+#add feed code as a column
+numRows = names.count()[0]
+numCols = 1
+feed=pd.DataFrame(index=range(numRows),columns=range(numCols))
+feed.columns  = ["Feed code"]
+names.insert(0, "Feed code", feed["Feed code"])
+names["Feed code"] = "SSE"
+
+output_liquidated_stocks = names.copy()
+
+#output_liquidated_stocks = pd.DataFrame()
+#output_liquidated_stocks["Names"] = names_sorted
+
+#conditional returns
+
+cond = (ret.shift(-1) < 0)
+I_cond =  big_downday.shift(3) & high_volume.shift(3) &(ret_5d.shift(3) < 0) & (liq_segment_1) & cond
+
+return_fwd = (close_prices.shift(-5)/close_prices.shift(-1)-1)
+returns = return_fwd.copy()
+
+#return_fwd_2d = (close_prices.shift(-2)/close_prices.shift(-1)-1)
+returns_dipp_strategy = I_cond*returns
+
+print("Strategy mean return per day")
+print(returns_dipp_strategy[returns_dipp_strategy!=0].stack().mean())
+print("Strategy daily volatility")
+print(returns_dipp_strategy[returns_dipp_strategy!=0].stack().std())
+kelly= returns_dipp_strategy[returns_dipp_strategy!=0].stack().mean()/(returns_dipp_strategy[returns_dipp_strategy!=0].stack().std()**2)
+print("Strategy Kelly fraction")
+print(kelly)
+
+#calculate returns
+long_ret_dipp = returns_dipp_strategy.fillna(0)
+long_cum_ret_dipp = np.cumprod(long_ret_dipp+1)
+#short_ret = -1*short_pos*(mod_opcl_returns+0.03/100)
+#short_cum_ret = np.cumprod(short_ret+1)
+strat_ret_dipp = long_ret_dipp[long_ret_dipp!=0].mean(axis=1).fillna(0) #+short_ret
+cum_ret_dipp = np.cumprod(strat_ret_dipp+1)
+plt.figure()
+plt.plot(cum_ret_dipp.ffill())
+
+rolling_high_dipp = cum_ret_dipp.cummax()
+draw_down_dipp = cum_ret_dipp/rolling_high_dipp-1
+max_dd_dipp = draw_down_dipp.cummin().tail(1)
+print("Max draw down")
+print(max_dd_dipp)
+
