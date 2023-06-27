@@ -97,7 +97,7 @@ rng = (high_prices - low_prices)/close_prices > 0.1
 
 I =  big_downday.shift(3) & high_volume.shift(3) &(ret_5d.shift(3) < 0) & (liq_segment_1) #& (ret_5d.shift(3) < 0)#&  & #(ret.shift(0)>0.)# & (ret.shift(-1)<0)
 
-return_fwd = (close_prices.shift(-5)/close_prices.shift(0)-1)
+return_fwd = (close_prices.shift(-5)/close_prices_ffill.shift(0)-1)
 returns = return_fwd.copy()
 
 #return_fwd_2d = (close_prices.shift(-2)/close_prices.shift(-1)-1)
@@ -112,7 +112,6 @@ print("Strategy Kelly fraction")
 print(kelly)
 print("Trimmed mean")
 print(stats.trim_mean(returns_strategy[returns_strategy!=0].stack(),0.05))
-
 
 #calculate returns
 long_ret = returns_strategy.fillna(0)
@@ -141,6 +140,21 @@ ret_per_year = g.sum()
 print("   ")
 print("Long liquidated stock returns by year")
 print(ret_per_year)
+
+
+#calculate log returns by month
+month_per = log_cum_ret.index.to_period("M")
+returns_by_month = log_cum_ret.groupby(log_cum_ret.index.month).sum()
+print("   ")
+print("Gap down long returns by month")
+print(returns_by_month)
+
+#calculate volatility by month
+month_per = log_cum_ret.index.to_period("M")
+vol_by_month = log_cum_ret.groupby(log_cum_ret.index.month).std()
+print("   ")
+print("Continuation break out volatility by month")
+print(vol_by_month)
 
 
 liquidated_stocks = big_downday.shift(2) & high_volume.shift(2) & (ret_5d.shift(2) < 0) & (liq_segment_1)
@@ -172,10 +186,10 @@ output_liquidated_stocks = names.copy()
 
 #conditional returns
 
-cond = (ret.shift(-1) < 0)
+cond = (ret.shift(-1) > 0)
 I_cond =  big_downday.shift(3) & high_volume.shift(3) &(ret_5d.shift(3) < 0) & (liq_segment_1) & cond
 
-return_fwd = (close_prices.shift(-5)/close_prices.shift(-1)-1)
+return_fwd = (close_prices_ffill.shift(-4)/close_prices_ffill.shift(-1)-1)
 returns = return_fwd.copy()
 
 #return_fwd_2d = (close_prices.shift(-2)/close_prices.shift(-1)-1)
