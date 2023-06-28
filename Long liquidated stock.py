@@ -38,6 +38,7 @@ tickers = yf_names.str.cat(sep=" ")
 hist = yf.download(tickers, start='2015-01-01', end=tday_str)
 # ============================================================================
 # =============================================================================
+hist = hist.drop([pd.Timestamp('2023-06-06 00:00:00')])
 
 # .dropna(how='all',inplace = True)#.fillna(0)
 close_prices = hist["Adj Close"]
@@ -89,7 +90,7 @@ ret_20d = close_prices_ffill.shift(1)/close_prices_ffill.shift(21)-1
 
 consecutive_neg_returns = (ret.shift(1) < 0) & (ret.shift(2) < 0) & (ret.shift(3) < 0)
 big_downday = (ret < -0.15)
-high_volume = volumes > 3*avg_volume
+high_volume = volumes > 5*avg_volume
 close_high = (high_prices - close_prices) < 0.1*(high_prices - low_prices)
 close_low = (close_prices-low_prices) < 0.1*(high_prices - low_prices)
 big_bounce = (close_prices - low_prices) > 0.15
@@ -97,7 +98,19 @@ rng = (high_prices - low_prices)/close_prices > 0.1
 
 I =  big_downday.shift(3) & high_volume.shift(3) &(ret_5d.shift(3) < 0) & (liq_segment_1) #& (ret_5d.shift(3) < 0)#&  & #(ret.shift(0)>0.)# & (ret.shift(-1)<0)
 
-return_fwd = (close_prices.shift(-5)/close_prices_ffill.shift(0)-1)
+stop_1 = ret < 0
+stop_2 = ret > 0
+stop_3 = ret > 0.03
+stop_4 = ret > 0.07
+
+I[(I.shift(1) == True) & ~stop_3] = True # & ~stop_2
+I[(I.shift(2) == True) & (I.shift(1) == True) & ~stop_3] = True # & ~stop_2
+I[(I.shift(3) == True) & (I.shift(2) == True) & (I.shift(1) == True)] = True
+I[(I.shift(4) == True) & (I.shift(3) == True) & (I.shift(2) == True) & (I.shift(1) == True)] = True
+
+
+#return_fwd = (close_prices_ffill.shift(-5)/close_prices_ffill.shift(0)-1)
+return_fwd = close_prices_ffill.shift(-1)/close_prices_ffill-1
 returns = return_fwd.copy()
 
 #return_fwd_2d = (close_prices.shift(-2)/close_prices.shift(-1)-1)
@@ -123,7 +136,7 @@ cum_ret = np.cumprod(strat_ret+1)
 plt.figure()
 plt.plot(cum_ret.ffill())
 #returns_strategy[returns_strategy!=0].stack().hist(bins=100)
-
+liq_stock_ret = strat_ret.ffill()
 
 rolling_high = cum_ret.cummax()
 draw_down = cum_ret/rolling_high-1
