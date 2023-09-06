@@ -27,7 +27,9 @@ tday_str = tday.strftime("%Y-%m-%d")
 
 
 data = pd.read_csv(r".\universe all listed sweden.csv",delimiter=";")
- 
+#data = pd.read_csv(r".\universe CPH 20230831.csv",delimiter=";")
+
+
 yf_names = data["Yahoo finance name"]
 
 tickers = yf_names.str.cat(sep=" ")
