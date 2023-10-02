@@ -172,33 +172,6 @@ print("Continuation break out volatility by month")
 print(vol_by_month)
 
 
-liquidated_stocks = big_downday.shift(2) & high_volume.shift(2) & (ret_5d.shift(2) < 0) & (liq_segment_1)
-#list the values for change in liquidity by name
-liquidated_stocks_last = liquidated_stocks.tail(1).T
-
-names = liquidated_stocks_last.set_axis(['Liquidated names'], axis=1)
-names_sorted = names.sort_values(by=['Liquidated names'])
-
-#reformat names to infront
-names = names_sorted[names_sorted==True].dropna()
-names = names.index.to_frame()
-names.columns  =['Liquidated names']
-names = pd.DataFrame(names['Liquidated names'].str.replace(r'.ST$', ''))
-names =  pd.DataFrame(names['Liquidated names'].str.replace(r'-', ' '))
-
-#add feed code as a column
-numRows = names.count()[0]
-numCols = 1
-feed=pd.DataFrame(index=range(numRows),columns=range(numCols))
-feed.columns  = ["Feed code"]
-names.insert(0, "Feed code", feed["Feed code"])
-names["Feed code"] = "SSE"
-
-output_liquidated_stocks = names.copy()
-
-#output_liquidated_stocks = pd.DataFrame()
-#output_liquidated_stocks["Names"] = names_sorted
-
 #conditional returns
 
 cond = (ret.shift(-1) > 0)
